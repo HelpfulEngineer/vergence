@@ -60,8 +60,8 @@ function App() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <p className="app-kicker">Vergence // Narrative Dice Roller</p>
-        <h1>Star Wars RPG Dice Console</h1>
+        <p className="app-kicker">Star Wars RPG Dice Console</p>
+        <h1>Vergence</h1>
         <p className="app-subtitle">
           Build your pool, apply upgrades, and resolve symbols with exact FFG / Edge Studio rules.
         </p>
