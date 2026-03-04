@@ -54,6 +54,13 @@ function App() {
         pool: { ...pool },
         outcome: resolved.outcome,
         timestamp: rolledAt,
+        symbols: [...symbols],
+        netSuccess: resolved.netSuccess,
+        netAdvantage: resolved.netAdvantage,
+        triumph: resolved.totals.triumph,
+        despair: resolved.totals.despair,
+        light: resolved.totals.light,
+        dark: resolved.totals.dark,
       }
 
       historyId.current += 1

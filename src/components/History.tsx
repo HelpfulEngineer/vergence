@@ -1,16 +1,36 @@
 import { formatPool } from '../dice/pool'
-import type { DicePool } from '../dice/types'
+import type { DicePool, SymbolCode } from '../dice/types'
 
 export interface HistoryEntry {
   id: number
   pool: DicePool
   outcome: string
   timestamp: number
+  symbols: SymbolCode[]
+  netSuccess: number
+  netAdvantage: number
+  triumph: number
+  despair: number
+  light: number
+  dark: number
 }
 
 interface HistoryProps {
   items: HistoryEntry[]
 }
+
+const SYMBOL_LABELS: Record<SymbolCode, string> = {
+  S: 'S',
+  F: 'F',
+  A: 'A',
+  T: 'T',
+  TRI: 'Tri',
+  DES: 'Des',
+  L: 'L',
+  D: 'D',
+}
+
+const formatNet = (value: number): string => (value > 0 ? `+${value}` : `${value}`)
 
 const formatTimestamp = (timestamp: number): string =>
   new Date(timestamp).toLocaleString([], {
@@ -38,7 +58,22 @@ export const History = ({ items }: HistoryProps) => (
               <strong>{item.outcome}</strong>
               <time dateTime={new Date(item.timestamp).toISOString()}>{formatTimestamp(item.timestamp)}</time>
             </div>
-            <p>{formatPool(item.pool)}</p>
+            <p className="history-pool">{formatPool(item.pool)}</p>
+            <div className="history-symbols">
+              {item.symbols.length > 0 ? (
+                item.symbols.map((symbol, index) => (
+                  <span key={`${item.id}-${symbol}-${index}`} className={`symbol-chip symbol-${symbol.toLowerCase()}`}>
+                    {SYMBOL_LABELS[symbol]}
+                  </span>
+                ))
+              ) : (
+                <span className="empty-chip">No symbols rolled</span>
+              )}
+            </div>
+            <p className="history-breakdown">
+              Net S {formatNet(item.netSuccess)} | Net A {formatNet(item.netAdvantage)} | Tri {item.triumph} | Des{' '}
+              {item.despair} | L {item.light} | D {item.dark}
+            </p>
           </li>
         ))}
       </ul>

@@ -473,10 +473,28 @@
   padding: 0.64rem;
 }
 
-.history-item p {
+.history-pool,
+.history-breakdown {
   margin: 0.45rem 0 0;
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.history-symbols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.history-symbols .symbol-chip,
+.history-symbols .empty-chip {
+  font-size: 0.68rem;
+  padding: 0.28rem 0.44rem;
+}
+
+.history-breakdown {
+  font-size: 0.75rem;
 }
 
 .history-meta {
