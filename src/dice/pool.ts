@@ -75,5 +75,5 @@ export const totalDiceInPool = (pool: DicePool): number =>
 export const formatPool = (pool: DicePool): string => {
   const parts = DIE_ORDER.filter((die) => pool[die] > 0).map((die) => `${pool[die]} ${DICE[die].shortLabel}`)
 
-  return parts.length > 0 ? parts.join(' • ') : 'Empty Pool'
+  return parts.length > 0 ? parts.join(' | ') : 'Empty Pool'
 }

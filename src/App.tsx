@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import './App.css'
 import { History } from './components/History'
 import type { HistoryEntry } from './components/History'
+import { OddsIntelPanel } from './components/OddsIntelPanel'
 import { PoolBuilder } from './components/PoolBuilder'
 import { Results } from './components/Results'
 import {
@@ -9,6 +10,7 @@ import {
   createEmptyPool,
   downgradeChallengeToDifficulty,
   downgradeProficiencyToAbility,
+  formatPool,
   totalDiceInPool,
   upgradeAbilityToProficiency,
   upgradeDifficultyToChallenge,
@@ -27,8 +29,10 @@ function App() {
   const [pool, setPool] = useState<DicePool>(() => createEmptyPool())
   const [lastRoll, setLastRoll] = useState<LastRollState | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [oddsEnabled, setOddsEnabled] = useState(false)
   const historyId = useRef(1)
   const canRoll = useMemo(() => totalDiceInPool(pool) > 0, [pool])
+  const poolSummary = useMemo(() => formatPool(pool), [pool])
 
   const updateDie = (die: DieType, delta: number): void => {
     setPool((previousPool) => adjustDieCount(previousPool, die, delta))
@@ -71,8 +75,10 @@ function App() {
         <PoolBuilder
           pool={pool}
           canRoll={canRoll}
+          oddsEnabled={oddsEnabled}
           onIncrement={(die) => updateDie(die, 1)}
           onDecrement={(die) => updateDie(die, -1)}
+          onToggleOdds={() => setOddsEnabled((enabled) => !enabled)}
           onUpgradeAbility={() => setPool((previousPool) => upgradeAbilityToProficiency(previousPool))}
           onDowngradeProficiency={() =>
             setPool((previousPool) => downgradeProficiencyToAbility(previousPool))
@@ -90,10 +96,12 @@ function App() {
         />
 
         <div className="right-column">
+          {oddsEnabled ? <OddsIntelPanel pool={pool} /> : null}
           <Results
             symbols={lastRoll?.symbols ?? []}
             resolved={lastRoll?.resolved ?? null}
             rolledAt={lastRoll?.rolledAt ?? null}
+            poolSummary={poolSummary}
           />
           <History items={history} />
         </div>

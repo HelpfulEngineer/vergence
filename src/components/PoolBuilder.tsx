@@ -5,8 +5,10 @@ import type { DicePool, DieType } from '../dice/types'
 interface PoolBuilderProps {
   pool: DicePool
   canRoll: boolean
+  oddsEnabled: boolean
   onIncrement: (die: DieType) => void
   onDecrement: (die: DieType) => void
+  onToggleOdds: () => void
   onUpgradeAbility: () => void
   onDowngradeProficiency: () => void
   onUpgradeDifficulty: () => void
@@ -20,8 +22,10 @@ interface PoolBuilderProps {
 export const PoolBuilder = ({
   pool,
   canRoll,
+  oddsEnabled,
   onIncrement,
   onDecrement,
+  onToggleOdds,
   onUpgradeAbility,
   onDowngradeProficiency,
   onUpgradeDifficulty,
@@ -36,6 +40,11 @@ export const PoolBuilder = ({
       <h2>Dice Pool</h2>
       <p>Build your check, then roll.</p>
     </header>
+
+    <label className="odds-toggle">
+      <input type="checkbox" checked={oddsEnabled} onChange={onToggleOdds} />
+      <span>Never tell me the odds!</span>
+    </label>
 
     <ul className="dice-list">
       {DIE_ORDER.map((die) => {

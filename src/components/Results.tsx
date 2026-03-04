@@ -1,3 +1,5 @@
+import { toBlob } from 'html-to-image'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ResolvedRoll } from '../dice/resolver'
 import type { SymbolCode } from '../dice/types'
 
@@ -5,7 +7,10 @@ interface ResultsProps {
   symbols: SymbolCode[]
   resolved: ResolvedRoll | null
   rolledAt: number | null
+  poolSummary: string
 }
+
+type ExportStatus = 'idle' | 'copied' | 'downloaded' | 'failed'
 
 const SYMBOL_LABELS: Record<SymbolCode, string> = {
   S: 'S',
@@ -26,51 +31,187 @@ const netClass = (value: number): string => {
 
 const formatNet = (value: number): string => (value > 0 ? `+${value}` : `${value}`)
 
-export const Results = ({ symbols, resolved, rolledAt }: ResultsProps) => (
-  <section className="panel" aria-label="Roll results">
-    <header className="panel-header">
-      <h2>Results</h2>
-      <p>{rolledAt ? new Date(rolledAt).toLocaleTimeString() : 'Waiting for first roll'}</p>
-    </header>
+const downloadBlob = (blob: Blob): void => {
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = 'vergence-roll.png'
+  anchor.click()
+  URL.revokeObjectURL(objectUrl)
+}
 
-    {!resolved ? (
-      <p className="empty-copy">Roll a pool to see symbols and net results.</p>
-    ) : (
-      <>
-        <p className="outcome-line">{resolved.outcome}</p>
+const copyBlobToClipboard = async (blob: Blob): Promise<boolean> => {
+  if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+    return false
+  }
 
-        <div className="chip-wrap">
-          {symbols.length > 0 ? (
-            symbols.map((symbol, index) => (
-              <span key={`${symbol}-${index}`} className={`symbol-chip symbol-${symbol.toLowerCase()}`}>
-                {SYMBOL_LABELS[symbol]}
-              </span>
-            ))
-          ) : (
-            <span className="empty-chip">No symbols rolled</span>
-          )}
+  try {
+    const clipboardItem = new ClipboardItem({ 'image/png': blob })
+    await navigator.clipboard.write([clipboardItem])
+    return true
+  } catch {
+    return false
+  }
+}
+
+export const Results = ({ symbols, resolved, rolledAt, poolSummary }: ResultsProps) => {
+  const exportCardRef = useRef<HTMLElement | null>(null)
+  const statusTimeoutRef = useRef<number | null>(null)
+  const pulseTimeoutRef = useRef<number | null>(null)
+  const [exportStatus, setExportStatus] = useState<ExportStatus>('idle')
+  const [animationKey, setAnimationKey] = useState(0)
+  const [pulseActive, setPulseActive] = useState(false)
+
+  const exportMessage = useMemo(() => {
+    if (exportStatus === 'copied') return 'Copied!'
+    if (exportStatus === 'downloaded') return 'Downloaded!'
+    if (exportStatus === 'failed') return 'Export failed'
+    return null
+  }, [exportStatus])
+
+  useEffect(() => {
+    if (!rolledAt) {
+      return
+    }
+
+    setAnimationKey((previous) => previous + 1)
+    setPulseActive(true)
+
+    if (pulseTimeoutRef.current) {
+      window.clearTimeout(pulseTimeoutRef.current)
+    }
+
+    pulseTimeoutRef.current = window.setTimeout(() => {
+      setPulseActive(false)
+      pulseTimeoutRef.current = null
+    }, 520)
+  }, [rolledAt])
+
+  useEffect(
+    () => () => {
+      if (statusTimeoutRef.current) {
+        window.clearTimeout(statusTimeoutRef.current)
+      }
+
+      if (pulseTimeoutRef.current) {
+        window.clearTimeout(pulseTimeoutRef.current)
+      }
+    },
+    [],
+  )
+
+  const setTransientStatus = (nextStatus: ExportStatus): void => {
+    setExportStatus(nextStatus)
+
+    if (statusTimeoutRef.current) {
+      window.clearTimeout(statusTimeoutRef.current)
+    }
+
+    statusTimeoutRef.current = window.setTimeout(() => {
+      setExportStatus('idle')
+      statusTimeoutRef.current = null
+    }, 1600)
+  }
+
+  const handleExport = async (): Promise<void> => {
+    if (!resolved || !exportCardRef.current) {
+      return
+    }
+
+    try {
+      const blob = await toBlob(exportCardRef.current, {
+        backgroundColor: '#0a1627',
+        pixelRatio: 3,
+        cacheBust: true,
+      })
+
+      if (!blob) {
+        throw new Error('Failed to render export image')
+      }
+
+      const copied = await copyBlobToClipboard(blob)
+
+      if (copied) {
+        setTransientStatus('copied')
+        return
+      }
+
+      downloadBlob(blob)
+      setTransientStatus('downloaded')
+    } catch {
+      setTransientStatus('failed')
+    }
+  }
+
+  return (
+    <section className="panel results-panel" aria-label="Roll results">
+      <header className="panel-header">
+        <h2>Results</h2>
+        <div className="results-header-side">
+          <p>{rolledAt ? new Date(rolledAt).toLocaleTimeString() : 'Waiting for first roll'}</p>
+          <button
+            type="button"
+            className="ghost-button export-button"
+            onClick={() => {
+              void handleExport()
+            }}
+            disabled={!resolved}
+          >
+            Export
+          </button>
         </div>
+      </header>
 
-        <dl className="tally-grid">
-          <dt>Net Successes</dt>
-          <dd className={netClass(resolved.netSuccess)}>{formatNet(resolved.netSuccess)}</dd>
+      {exportMessage ? <p className="export-feedback">{exportMessage}</p> : null}
 
-          <dt>Net Advantages</dt>
-          <dd className={netClass(resolved.netAdvantage)}>{formatNet(resolved.netAdvantage)}</dd>
+      <article
+        id="export-card"
+        ref={exportCardRef}
+        className={`results-export-card ${pulseActive ? 'results-pulse' : ''}`}
+      >
+        <p className="results-export-title">Vergence Roll Report</p>
+        <p className="results-export-pool">{poolSummary}</p>
 
-          <dt>Triumph Count</dt>
-          <dd>{resolved.totals.triumph}</dd>
+        {!resolved ? (
+          <p className="empty-copy">Roll a pool to see symbols and net results.</p>
+        ) : (
+          <div key={animationKey} className="results-reveal">
+            <p className="outcome-line">{resolved.outcome}</p>
 
-          <dt>Despair Count</dt>
-          <dd>{resolved.totals.despair}</dd>
+            <div className="chip-wrap">
+              {symbols.length > 0 ? (
+                symbols.map((symbol, index) => (
+                  <span key={`${symbol}-${index}`} className={`symbol-chip symbol-${symbol.toLowerCase()}`}>
+                    {SYMBOL_LABELS[symbol]}
+                  </span>
+                ))
+              ) : (
+                <span className="empty-chip">No symbols rolled</span>
+              )}
+            </div>
 
-          <dt>Light Pips</dt>
-          <dd>{resolved.totals.light}</dd>
+            <dl className="tally-grid">
+              <dt>Net Successes</dt>
+              <dd className={netClass(resolved.netSuccess)}>{formatNet(resolved.netSuccess)}</dd>
 
-          <dt>Dark Pips</dt>
-          <dd>{resolved.totals.dark}</dd>
-        </dl>
-      </>
-    )}
-  </section>
-)
+              <dt>Net Advantages</dt>
+              <dd className={netClass(resolved.netAdvantage)}>{formatNet(resolved.netAdvantage)}</dd>
+
+              <dt>Triumph Count</dt>
+              <dd>{resolved.totals.triumph}</dd>
+
+              <dt>Despair Count</dt>
+              <dd>{resolved.totals.despair}</dd>
+
+              <dt>Light Pips</dt>
+              <dd>{resolved.totals.light}</dd>
+
+              <dt>Dark Pips</dt>
+              <dd>{resolved.totals.dark}</dd>
+            </dl>
+          </div>
+        )}
+      </article>
+    </section>
+  )
+}
