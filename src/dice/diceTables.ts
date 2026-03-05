@@ -23,7 +23,7 @@ const boostFaces: readonly DieFace[] = [
   ['S'],
   ['S', 'A'],
   ['A'],
-  ['A'],
+  ['A', 'A'],
 ]
 
 const setbackFaces: readonly DieFace[] = [
@@ -79,7 +79,7 @@ const challengeFaces: readonly DieFace[] = [
   ['F', 'F'],
   ['F', 'F'],
   ['T'],
-  ['F', 'T'],
+  ['T'],
   ['F', 'T'],
   ['F', 'T'],
   ['T', 'T'],
@@ -93,11 +93,11 @@ const forceFaces: readonly DieFace[] = [
   ['D'],
   ['D'],
   ['D'],
+  ['D'],
   ['D', 'D'],
   ['L'],
   ['L'],
-  ['L'],
-  ['L'],
+  ['L', 'L'],
   ['L', 'L'],
   ['L', 'L'],
 ]
