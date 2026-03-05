@@ -1,7 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export const SymbolKey = () => {
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const popoverRef = useRef<HTMLElement | null>(null)
+
+  const closeKey = useCallback((restoreFocus: boolean): void => {
+    setOpen(false)
+
+    if (restoreFocus) {
+      window.requestAnimationFrame(() => {
+        triggerRef.current?.focus()
+      })
+    }
+  }, [])
 
   useEffect(() => {
     if (!open) {
@@ -10,17 +22,38 @@ export const SymbolKey = () => {
 
     const onEscape = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
-        setOpen(false)
+        event.preventDefault()
+        closeKey(true)
       }
     }
 
+    const onPointerDown = (event: PointerEvent): void => {
+      const target = event.target
+
+      if (!(target instanceof Node)) {
+        return
+      }
+
+      if (popoverRef.current?.contains(target) || triggerRef.current?.contains(target)) {
+        return
+      }
+
+      closeKey(false)
+    }
+
     window.addEventListener('keydown', onEscape)
-    return () => window.removeEventListener('keydown', onEscape)
-  }, [open])
+    window.addEventListener('pointerdown', onPointerDown)
+
+    return () => {
+      window.removeEventListener('keydown', onEscape)
+      window.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [closeKey, open])
 
   return (
     <div className="symbol-key">
       <button
+        ref={triggerRef}
         type="button"
         className="ghost-button symbol-key-trigger"
         aria-haspopup="dialog"
@@ -32,14 +65,20 @@ export const SymbolKey = () => {
       </button>
 
       {open ? (
-        <section className="symbol-key-popover" role="dialog" aria-label="Symbol key">
+        <section
+          ref={popoverRef}
+          className="symbol-key-popover"
+          role="dialog"
+          aria-modal="false"
+          aria-label="Symbol key"
+        >
           <header className="symbol-key-header">
             <h3>Symbol Key</h3>
             <button
               type="button"
               className="ghost-button symbol-key-close"
               aria-label="Close symbol key"
-              onClick={() => setOpen(false)}
+              onClick={() => closeKey(true)}
             >
               Close
             </button>
