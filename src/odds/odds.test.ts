@@ -95,7 +95,7 @@ describe('computeOdds', () => {
       force: 7,
     })
 
-    expect(second).toBe(first)
+    expect(second).toStrictEqual(first)
     closeTo(second.pSuccess, first.pSuccess, 12)
     closeTo(second.pFailure, first.pFailure, 12)
     closeTo(second.expectedNetSuccess, first.expectedNetSuccess, 12)

@@ -693,6 +693,115 @@
   letter-spacing: 0.03em;
 }
 
+.intel-decrypt {
+  position: relative;
+  margin-top: 0.72rem;
+}
+
+.intel-command {
+  width: 100%;
+  border-color: rgba(129, 188, 220, 0.36);
+  background: rgba(12, 39, 57, 0.55);
+  font-family: 'Space Mono', 'IBM Plex Mono', 'Consolas', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.intel-terminal {
+  margin-top: 0.52rem;
+  border: 1px solid rgba(106, 170, 205, 0.3);
+  border-radius: 10px;
+  background: rgba(2, 16, 28, 0.8);
+  padding: 0.52rem;
+  font-family: 'Space Mono', 'IBM Plex Mono', 'Consolas', monospace;
+  position: relative;
+  overflow: hidden;
+}
+
+.intel-terminal p {
+  margin: 0;
+  color: #9fc5dc;
+  font-size: 0.69rem;
+}
+
+.intel-terminal p + p {
+  margin-top: 0.24rem;
+}
+
+.intel-terminal-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(178, 233, 255, 0.16) 45%,
+    transparent 100%
+  );
+  animation: intel-terminal-scan 520ms linear infinite;
+}
+
+.intel-advanced {
+  position: relative;
+  margin-top: 0.72rem;
+  border: 1px solid rgba(124, 184, 218, 0.24);
+  border-radius: 11px;
+  background: rgba(8, 22, 33, 0.76);
+  padding: 0.6rem;
+  animation: intel-advanced-reveal 320ms ease-out;
+}
+
+.intel-divider {
+  margin: 0 0 0.44rem;
+  color: #7ea0b8;
+  font-family: 'Space Mono', 'IBM Plex Mono', 'Consolas', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+}
+
+.intel-advanced h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: #c2e0f1;
+  letter-spacing: 0.03em;
+}
+
+.intel-advanced-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.36rem 0.58rem;
+  font-family: 'Space Mono', 'IBM Plex Mono', 'Consolas', monospace;
+}
+
+.intel-advanced-grid dt {
+  color: #9bb5c6;
+  font-size: 0.75rem;
+}
+
+.intel-advanced-grid dd {
+  margin: 0;
+  color: #d5edf8;
+  font-size: 0.78rem;
+}
+
+.intel-warning {
+  margin: 0.58rem 0 0;
+  color: #ffb9b9;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+}
+
+.intel-most-likely {
+  margin: 0.58rem 0 0;
+  color: #a8c5d7;
+  font-size: 0.73rem;
+  font-family: 'Space Mono', 'IBM Plex Mono', 'Consolas', monospace;
+}
+
 .history-list {
   list-style: none;
   margin: 0;
@@ -871,6 +980,26 @@
   }
 }
 
+@keyframes intel-terminal-scan {
+  0% {
+    transform: translateY(-105%);
+  }
+  100% {
+    transform: translateY(105%);
+  }
+}
+
+@keyframes intel-advanced-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .circle-button,
   .ghost-button,
@@ -898,6 +1027,11 @@
   .rolling-chip,
   .rolling-spinner,
   .result-chip {
+    animation: none;
+  }
+
+  .intel-terminal-active::after,
+  .intel-advanced {
     animation: none;
   }
 
