@@ -5,6 +5,7 @@ import type { DicePool, DieType } from '../dice/types'
 interface PoolBuilderProps {
   pool: DicePool
   canRoll: boolean
+  isRolling: boolean
   oddsEnabled: boolean
   onIncrement: (die: DieType) => void
   onDecrement: (die: DieType) => void
@@ -22,6 +23,7 @@ interface PoolBuilderProps {
 export const PoolBuilder = ({
   pool,
   canRoll,
+  isRolling,
   oddsEnabled,
   onIncrement,
   onDecrement,
@@ -116,8 +118,8 @@ export const PoolBuilder = ({
       <button type="button" className="clear-button" onClick={onClear}>
         Clear Pool
       </button>
-      <button type="button" className="roll-button" onClick={onRoll} disabled={!canRoll}>
-        Roll
+      <button type="button" className="roll-button" onClick={onRoll} disabled={!canRoll || isRolling}>
+        {isRolling ? 'Rolling...' : 'Roll'}
       </button>
     </div>
   </section>

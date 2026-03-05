@@ -150,7 +150,7 @@
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
   font-size: 1rem;
-  transition: transform 120ms ease, background-color 180ms ease, border-color 180ms ease;
+  transition: transform 100ms ease, filter 180ms ease, border-color 180ms ease;
 }
 
 .circle-button:disabled {
@@ -186,7 +186,7 @@
   padding: 0.58rem 0.75rem;
   font-size: 0.84rem;
   letter-spacing: 0.02em;
-  transition: transform 120ms ease, filter 200ms ease, border-color 200ms ease;
+  transition: transform 100ms ease, filter 180ms ease, border-color 180ms ease;
 }
 
 .roll-button {
@@ -212,7 +212,24 @@
 .ghost-button:active:not(:disabled),
 .clear-button:active:not(:disabled),
 .roll-button:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: scale(0.98);
+}
+
+.circle-button:focus-visible,
+.ghost-button:focus-visible,
+.clear-button:focus-visible,
+.roll-button:focus-visible {
+  outline: 2px solid rgba(129, 213, 250, 0.72);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .circle-button:hover:not(:disabled),
+  .ghost-button:hover:not(:disabled),
+  .clear-button:hover:not(:disabled),
+  .roll-button:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
 }
 
 .clear-button {
@@ -335,10 +352,33 @@
 }
 
 .results-export-card {
+  position: relative;
+  overflow: hidden;
   border-radius: 14px;
   border: 1px solid rgba(120, 184, 220, 0.23);
   background: linear-gradient(155deg, rgba(8, 25, 42, 0.88), rgba(11, 20, 38, 0.93));
   padding: 0.8rem;
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+
+.results-export-card.results-rolling {
+  opacity: 0.92;
+  filter: saturate(0.9) brightness(0.95);
+}
+
+.results-export-card.results-rolling::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(146, 210, 240, 0.12) 45%,
+    transparent 100%
+  );
+  animation: results-scanline 460ms linear infinite;
 }
 
 .results-export-title {
@@ -360,7 +400,67 @@
 }
 
 .results-pulse {
-  animation: results-pulse 540ms ease-out;
+  animation-duration: 560ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.results-pulse.results-pulse-neutral,
+.results-pulse.results-pulse-success {
+  animation-name: results-pulse-success;
+}
+
+.results-pulse.results-pulse-failure {
+  animation-name: results-pulse-failure;
+}
+
+.results-pulse.results-pulse-triumph {
+  animation-name: results-pulse-triumph;
+}
+
+.results-pulse.results-pulse-despair {
+  animation-name: results-pulse-despair;
+}
+
+.results-pulse.results-pulse-mixed {
+  animation-name: results-pulse-mixed;
+}
+
+.rolling-state {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rolling-label {
+  margin: 0;
+  color: #9bc3da;
+  font-family: 'Space Mono', 'IBM Plex Mono', 'Consolas', monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+}
+
+.chip-wrap-rolling {
+  margin-bottom: 0;
+}
+
+.rolling-chip {
+  animation: rolling-chip-shift 180ms ease-in-out infinite;
+  animation-delay: calc(var(--chip-delay, 0ms));
+  border-color: rgba(140, 199, 232, 0.3);
+}
+
+.rolling-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  border: 2px solid rgba(146, 200, 229, 0.2);
+  border-top-color: rgba(146, 200, 229, 0.65);
+  animation: rolling-spin 520ms linear infinite;
+}
+
+.result-chip {
+  animation: result-chip-flicker 260ms ease-out both;
+  animation-delay: calc(var(--chip-delay, 0ms));
 }
 
 .roll-detail-panel {
@@ -665,15 +765,109 @@
   }
 }
 
-@keyframes results-pulse {
+@keyframes results-scanline {
   0% {
-    box-shadow: 0 0 0 rgba(89, 188, 242, 0);
-  }
-  35% {
-    box-shadow: 0 0 0 1px rgba(122, 220, 255, 0.4), 0 0 22px rgba(89, 188, 242, 0.28);
+    transform: translateY(-110%);
   }
   100% {
-    box-shadow: 0 0 0 rgba(89, 188, 242, 0);
+    transform: translateY(110%);
+  }
+}
+
+@keyframes results-pulse-success {
+  0% {
+    box-shadow: 0 0 0 rgba(85, 181, 228, 0);
+  }
+  40% {
+    box-shadow: 0 0 0 1px rgba(108, 205, 247, 0.36), 0 0 18px rgba(64, 156, 206, 0.22);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(85, 181, 228, 0);
+  }
+}
+
+@keyframes results-pulse-failure {
+  0% {
+    box-shadow: 0 0 0 rgba(210, 88, 88, 0);
+  }
+  40% {
+    box-shadow: 0 0 0 1px rgba(236, 128, 128, 0.28), 0 0 16px rgba(173, 68, 68, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(210, 88, 88, 0);
+  }
+}
+
+@keyframes results-pulse-triumph {
+  0% {
+    box-shadow: 0 0 0 rgba(232, 196, 99, 0);
+  }
+  40% {
+    box-shadow: 0 0 0 1px rgba(238, 204, 116, 0.34), 0 0 18px rgba(209, 164, 58, 0.24);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(232, 196, 99, 0);
+  }
+}
+
+@keyframes results-pulse-despair {
+  0% {
+    box-shadow: 0 0 0 rgba(180, 44, 44, 0);
+  }
+  40% {
+    box-shadow: 0 0 0 1px rgba(194, 57, 57, 0.34), 0 0 18px rgba(144, 37, 37, 0.24);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(180, 44, 44, 0);
+  }
+}
+
+@keyframes results-pulse-mixed {
+  0% {
+    box-shadow: 0 0 0 rgba(171, 116, 74, 0);
+  }
+  40% {
+    box-shadow: 0 0 0 1px rgba(210, 152, 118, 0.34), 0 0 18px rgba(177, 94, 66, 0.24);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(171, 116, 74, 0);
+  }
+}
+
+@keyframes result-chip-flicker {
+  0% {
+    opacity: 0;
+    transform: translateY(2px);
+    filter: brightness(1.16);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: brightness(1);
+  }
+}
+
+@keyframes rolling-chip-shift {
+  0% {
+    opacity: 0.64;
+    transform: translateY(1px);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 0.64;
+    transform: translateY(1px);
+  }
+}
+
+@keyframes rolling-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 
@@ -690,6 +884,21 @@
   .clear-button:active:not(:disabled),
   .roll-button:active:not(:disabled) {
     transform: none;
+  }
+
+  .results-export-card {
+    transition: opacity 120ms linear;
+  }
+
+  .results-export-card.results-rolling::after {
+    animation: none;
+    opacity: 0.08;
+  }
+
+  .rolling-chip,
+  .rolling-spinner,
+  .result-chip {
+    animation: none;
   }
 
   .results-reveal,

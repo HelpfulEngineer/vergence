@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { History } from './components/History'
 import type { HistoryEntry } from './components/History'
@@ -18,56 +18,128 @@ import {
 import { resolveSymbols } from './dice/resolver'
 import { rollPool } from './dice/roller'
 import type { DicePool, DieRoll, DieType, SymbolCode } from './dice/types'
+import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion'
+import { useRollAnimation } from './hooks/useRollAnimation'
+import { useRollingPreview } from './hooks/useRollingPreview'
 
-interface LastRollState {
+const ROLL_ANIMATION_MS = 420
+
+interface RollState {
   symbols: SymbolCode[]
   rolls: DieRoll[]
   resolved: ReturnType<typeof resolveSymbols>
   rolledAt: number
+  poolSnapshot: DicePool
+  poolSummary: string
 }
 
 function App() {
   const [pool, setPool] = useState<DicePool>(() => createEmptyPool())
-  const [lastRoll, setLastRoll] = useState<LastRollState | null>(null)
+  const [lastRoll, setLastRoll] = useState<RollState | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [oddsEnabled, setOddsEnabled] = useState(false)
   const historyId = useRef(1)
+  const prefersReducedMotion = usePrefersReducedMotion()
   const canRoll = useMemo(() => totalDiceInPool(pool) > 0, [pool])
-  const poolSummary = useMemo(() => formatPool(pool), [pool])
+
+  const commitRoll = useCallback((roll: RollState): void => {
+    setLastRoll(roll)
+    setHistory((previousHistory) => {
+      const nextEntry: HistoryEntry = {
+        id: historyId.current,
+        pool: { ...roll.poolSnapshot },
+        outcome: roll.resolved.outcome,
+        timestamp: roll.rolledAt,
+        symbols: [...roll.symbols],
+        netSuccess: roll.resolved.netSuccess,
+        netAdvantage: roll.resolved.netAdvantage,
+        triumph: roll.resolved.totals.triumph,
+        despair: roll.resolved.totals.despair,
+        light: roll.resolved.totals.light,
+        dark: roll.resolved.totals.dark,
+      }
+
+      historyId.current += 1
+      return [nextEntry, ...previousHistory].slice(0, 10)
+    })
+  }, [])
+
+  const { isRolling, startRoll } = useRollAnimation<RollState>({
+    durationMs: prefersReducedMotion ? 0 : ROLL_ANIMATION_MS,
+    onCommit: commitRoll,
+  })
+
+  const previewChipCount = useMemo(() => {
+    if (lastRoll) {
+      return Math.max(lastRoll.symbols.length, 6)
+    }
+
+    return Math.max(totalDiceInPool(pool), 6)
+  }, [lastRoll, pool])
+
+  const rollingPreview = useRollingPreview({
+    isRolling,
+    chipCount: previewChipCount,
+    reducedMotion: prefersReducedMotion,
+  })
+
+  const outcomeFlags = useMemo(() => {
+    if (!lastRoll) {
+      return null
+    }
+
+    return {
+      isSuccess: lastRoll.resolved.netSuccess >= 1,
+      hasTriumph: lastRoll.resolved.totals.triumph > 0,
+      hasDespair: lastRoll.resolved.totals.despair > 0,
+    }
+  }, [lastRoll])
 
   const updateDie = (die: DieType, delta: number): void => {
     setPool((previousPool) => adjustDieCount(previousPool, die, delta))
   }
 
   const handleRoll = (): void => {
-    if (!canRoll) {
+    if (!canRoll || isRolling) {
       return
     }
 
-    const { symbols, rolls } = rollPool(pool)
+    const poolSnapshot: DicePool = { ...pool }
+    const { symbols, rolls } = rollPool(poolSnapshot)
     const resolved = resolveSymbols(symbols)
     const rolledAt = Date.now()
 
-    setLastRoll({ symbols, rolls, resolved, rolledAt })
-    setHistory((previousHistory) => {
-      const nextEntry: HistoryEntry = {
-        id: historyId.current,
-        pool: { ...pool },
-        outcome: resolved.outcome,
-        timestamp: rolledAt,
-        symbols: [...symbols],
-        netSuccess: resolved.netSuccess,
-        netAdvantage: resolved.netAdvantage,
-        triumph: resolved.totals.triumph,
-        despair: resolved.totals.despair,
-        light: resolved.totals.light,
-        dark: resolved.totals.dark,
-      }
-
-      historyId.current += 1
-      return [nextEntry, ...previousHistory].slice(0, 10)
+    startRoll({
+      symbols,
+      rolls,
+      resolved,
+      rolledAt,
+      poolSnapshot,
+      poolSummary: formatPool(poolSnapshot),
     })
   }
+
+  const resultModel = useMemo(() => {
+    if (!lastRoll) {
+      return null
+    }
+
+    return {
+      symbols: lastRoll.symbols,
+      rolls: lastRoll.rolls,
+      resolved: lastRoll.resolved,
+      rolledAt: lastRoll.rolledAt,
+      poolSummary: lastRoll.poolSummary,
+    }
+  }, [lastRoll])
+
+  const rollingPoolSummary = useMemo(() => {
+    if (!isRolling) {
+      return null
+    }
+
+    return formatPool(pool)
+  }, [isRolling, pool])
 
   return (
     <main className="app-shell">
@@ -83,6 +155,7 @@ function App() {
         <PoolBuilder
           pool={pool}
           canRoll={canRoll}
+          isRolling={isRolling}
           oddsEnabled={oddsEnabled}
           onIncrement={(die) => updateDie(die, 1)}
           onDecrement={(die) => updateDie(die, -1)}
@@ -106,11 +179,11 @@ function App() {
         <div className="right-column">
           {oddsEnabled ? <OddsIntelPanel pool={pool} /> : null}
           <Results
-            symbols={lastRoll?.symbols ?? []}
-            rolls={lastRoll?.rolls ?? []}
-            resolved={lastRoll?.resolved ?? null}
-            rolledAt={lastRoll?.rolledAt ?? null}
-            poolSummary={poolSummary}
+            result={resultModel}
+            isRolling={isRolling}
+            rollingPreview={rollingPreview}
+            outcomeFlags={outcomeFlags}
+            rollingPoolSummary={rollingPoolSummary}
           />
           <History items={history} />
         </div>

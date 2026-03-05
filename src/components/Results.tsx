@@ -1,16 +1,30 @@
 import { toBlob } from 'html-to-image'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { RollDetail } from './RollDetail'
 import { SymbolKey } from './SymbolKey'
 import type { ResolvedRoll } from '../dice/resolver'
 import type { DieRoll, SymbolCode } from '../dice/types'
 
-interface ResultsProps {
+interface ResultView {
   symbols: SymbolCode[]
   rolls: DieRoll[]
-  resolved: ResolvedRoll | null
-  rolledAt: number | null
+  resolved: ResolvedRoll
+  rolledAt: number
   poolSummary: string
+}
+
+interface OutcomeFlags {
+  isSuccess: boolean
+  hasTriumph: boolean
+  hasDespair: boolean
+}
+
+interface ResultsProps {
+  result: ResultView | null
+  isRolling: boolean
+  rollingPreview?: string[]
+  outcomeFlags?: OutcomeFlags | null
+  rollingPoolSummary?: string | null
 }
 
 type ExportStatus = 'idle' | 'copied' | 'downloaded' | 'failed'
@@ -57,7 +71,24 @@ const copyBlobToClipboard = async (blob: Blob): Promise<boolean> => {
   }
 }
 
-export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: ResultsProps) => {
+const getPulseClass = (flags: OutcomeFlags | null | undefined): string => {
+  if (!flags) {
+    return 'results-pulse-neutral'
+  }
+
+  if (flags.hasTriumph && flags.hasDespair) return 'results-pulse-mixed'
+  if (flags.hasTriumph) return 'results-pulse-triumph'
+  if (flags.hasDespair) return 'results-pulse-despair'
+  return flags.isSuccess ? 'results-pulse-success' : 'results-pulse-failure'
+}
+
+export const Results = ({
+  result,
+  isRolling,
+  rollingPreview = [],
+  outcomeFlags = null,
+  rollingPoolSummary = null,
+}: ResultsProps) => {
   const exportCardRef = useRef<HTMLElement | null>(null)
   const statusTimeoutRef = useRef<number | null>(null)
   const pulseTimeoutRef = useRef<number | null>(null)
@@ -65,6 +96,11 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
   const [showDetail, setShowDetail] = useState(false)
   const [animationKey, setAnimationKey] = useState(0)
   const [pulseActive, setPulseActive] = useState(false)
+  const rolledAt = result?.rolledAt ?? null
+
+  const pulseClass = useMemo(() => getPulseClass(outcomeFlags), [outcomeFlags])
+  const timestampLabel = result ? new Date(result.rolledAt).toLocaleTimeString() : 'Waiting for first roll'
+  const poolSummary = result?.poolSummary ?? rollingPoolSummary ?? 'Awaiting roll...'
 
   const exportMessage = useMemo(() => {
     if (exportStatus === 'copied') return 'Copied!'
@@ -74,7 +110,7 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
   }, [exportStatus])
 
   useEffect(() => {
-    if (!rolledAt) {
+    if (rolledAt === null) {
       return
     }
 
@@ -88,7 +124,7 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
     pulseTimeoutRef.current = window.setTimeout(() => {
       setPulseActive(false)
       pulseTimeoutRef.current = null
-    }, 520)
+    }, 540)
   }, [rolledAt])
 
   useEffect(
@@ -118,7 +154,7 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
   }
 
   const handleExport = async (): Promise<void> => {
-    if (!resolved || !exportCardRef.current) {
+    if (!result || !exportCardRef.current || isRolling) {
       return
     }
 
@@ -152,13 +188,13 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
       <header className="panel-header">
         <h2>Results</h2>
         <div className="results-header-side">
-          <p>{rolledAt ? new Date(rolledAt).toLocaleTimeString() : 'Waiting for first roll'}</p>
+          <p>{timestampLabel}</p>
           <label className="detail-toggle">
             <input
               type="checkbox"
               checked={showDetail}
               onChange={() => setShowDetail((previous) => !previous)}
-              disabled={!resolved}
+              disabled={!result}
             />
             <span>More Detail</span>
           </label>
@@ -169,7 +205,7 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
             onClick={() => {
               void handleExport()
             }}
-            disabled={!resolved}
+            disabled={!result || isRolling}
           >
             Export
           </button>
@@ -181,21 +217,51 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
       <article
         id="export-card"
         ref={exportCardRef}
-        className={`results-export-card ${pulseActive ? 'results-pulse' : ''}`}
+        className={[
+          'results-export-card',
+          isRolling ? 'results-rolling' : '',
+          pulseActive && !isRolling ? 'results-pulse' : '',
+          pulseActive && !isRolling ? pulseClass : '',
+        ]
+          .join(' ')
+          .trim()}
       >
         <p className="results-export-title">Vergence Roll Report</p>
         <p className="results-export-pool">{poolSummary}</p>
 
-        {!resolved ? (
+        {isRolling ? (
+          <div className="rolling-state" aria-live="polite">
+            <p className="rolling-label">CALCULATING...</p>
+            {rollingPreview.length > 0 ? (
+              <div className="chip-wrap chip-wrap-rolling">
+                {rollingPreview.map((chip, index) => (
+                  <span
+                    key={`rolling-${chip}-${index}`}
+                    className="symbol-chip rolling-chip"
+                    style={{ '--chip-delay': `${index * 24}ms` } as CSSProperties}
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="rolling-spinner" aria-hidden="true" />
+            )}
+          </div>
+        ) : !result ? (
           <p className="empty-copy">Roll a pool to see symbols and net results.</p>
         ) : (
           <div key={animationKey} className="results-reveal">
-            <p className="outcome-line">{resolved.outcome}</p>
+            <p className="outcome-line">{result.resolved.outcome}</p>
 
             <div className="chip-wrap">
-              {symbols.length > 0 ? (
-                symbols.map((symbol, index) => (
-                  <span key={`${symbol}-${index}`} className={`symbol-chip symbol-${symbol.toLowerCase()}`}>
+              {result.symbols.length > 0 ? (
+                result.symbols.map((symbol, index) => (
+                  <span
+                    key={`${symbol}-${index}`}
+                    className={`symbol-chip result-chip symbol-${symbol.toLowerCase()}`}
+                    style={{ '--chip-delay': `${index * 18}ms` } as CSSProperties}
+                  >
                     {SYMBOL_LABELS[symbol]}
                   </span>
                 ))
@@ -206,25 +272,25 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
 
             <dl className="tally-grid">
               <dt>Net Successes</dt>
-              <dd className={netClass(resolved.netSuccess)}>{formatNet(resolved.netSuccess)}</dd>
+              <dd className={netClass(result.resolved.netSuccess)}>{formatNet(result.resolved.netSuccess)}</dd>
 
               <dt>Net Advantages</dt>
-              <dd className={netClass(resolved.netAdvantage)}>{formatNet(resolved.netAdvantage)}</dd>
+              <dd className={netClass(result.resolved.netAdvantage)}>{formatNet(result.resolved.netAdvantage)}</dd>
 
               <dt>Triumph Count</dt>
-              <dd>{resolved.totals.triumph}</dd>
+              <dd>{result.resolved.totals.triumph}</dd>
 
               <dt>Despair Count</dt>
-              <dd>{resolved.totals.despair}</dd>
+              <dd>{result.resolved.totals.despair}</dd>
 
               <dt>Light Pips</dt>
-              <dd>{resolved.totals.light}</dd>
+              <dd>{result.resolved.totals.light}</dd>
 
               <dt>Dark Pips</dt>
-              <dd>{resolved.totals.dark}</dd>
+              <dd>{result.resolved.totals.dark}</dd>
             </dl>
 
-            {showDetail ? <RollDetail rolls={rolls} /> : null}
+            {showDetail ? <RollDetail rolls={result.rolls} /> : null}
           </div>
         )}
       </article>
