@@ -223,11 +223,11 @@ export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: Res
               <dt>Dark Pips</dt>
               <dd>{resolved.totals.dark}</dd>
             </dl>
+
+            {showDetail ? <RollDetail rolls={rolls} /> : null}
           </div>
         )}
       </article>
-
-      {resolved && showDetail ? <RollDetail rolls={rolls} /> : null}
     </section>
   )
 }
