@@ -236,6 +236,94 @@
   margin: 0;
 }
 
+.detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(135, 191, 223, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.73rem;
+}
+
+.detail-toggle input {
+  margin: 0;
+  accent-color: #4db8e7;
+}
+
+.detail-toggle span {
+  color: #aec2d3;
+}
+
+.detail-toggle input:disabled + span {
+  color: #6d8292;
+}
+
+.symbol-key {
+  position: relative;
+}
+
+.symbol-key-trigger {
+  padding-inline: 0.55rem;
+  font-size: 0.75rem;
+}
+
+.symbol-key-popover {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 40;
+  width: min(420px, calc(100vw - 2.5rem));
+  border: 1px solid rgba(121, 201, 242, 0.34);
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(6, 18, 31, 0.98), rgba(8, 21, 36, 0.98));
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.44);
+  padding: 0.72rem;
+}
+
+.symbol-key-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.symbol-key-header h3 {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.symbol-key-close {
+  font-size: 0.68rem;
+  padding: 0.3rem 0.48rem;
+}
+
+.symbol-key-list {
+  margin: 0.65rem 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.28rem 0.58rem;
+}
+
+.symbol-key-list dt {
+  font-family: 'Space Mono', 'IBM Plex Mono', 'Consolas', monospace;
+  font-size: 0.74rem;
+  color: #d2ecff;
+}
+
+.symbol-key-list dd {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #a9bfd0;
+}
+
+.symbol-key-note {
+  margin: 0.62rem 0 0;
+  font-size: 0.72rem;
+  color: #8fa9bc;
+}
+
 .export-button {
   padding-inline: 0.62rem;
 }
@@ -273,6 +361,53 @@
 
 .results-pulse {
   animation: results-pulse 540ms ease-out;
+}
+
+.roll-detail-panel {
+  margin-top: 0.72rem;
+  border: 1px solid rgba(124, 188, 224, 0.22);
+  border-radius: 12px;
+  background: rgba(8, 18, 33, 0.78);
+  padding: 0.72rem;
+}
+
+.roll-detail-header h3 {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
+
+.roll-detail-groups {
+  margin-top: 0.56rem;
+  display: grid;
+  gap: 0.52rem;
+}
+
+.roll-detail-group-title {
+  margin: 0;
+  color: #9eb5c8;
+  font-size: 0.74rem;
+}
+
+.roll-detail-chips {
+  margin-top: 0.3rem;
+  display: flex;
+  gap: 0.36rem;
+  flex-wrap: wrap;
+}
+
+.roll-detail-chip {
+  padding: 0.24rem 0.42rem;
+  border-radius: 8px;
+  border: 1px solid rgba(142, 200, 232, 0.24);
+  background: rgba(255, 255, 255, 0.03);
+  color: #cde5f6;
+  font-family: 'Space Mono', 'IBM Plex Mono', 'Consolas', monospace;
+  font-size: 0.71rem;
+}
+
+.roll-detail-chip-blank {
+  color: #8fa8ba;
 }
 
 .outcome-line {

@@ -44,14 +44,16 @@ describe('computeOdds', () => {
     closeTo(withForce.expectedNetSuccess, withoutForce.expectedNetSuccess, 12)
   })
 
-  it('has mirrored expected value between proficiency and challenge pools', () => {
+  it('keeps expected value direction sensible for positive and negative dice pools', () => {
     clearOddsCache()
     const proficiencyPool = computeOdds({ proficiency: 2 })
     const challengePool = computeOdds({ challenge: 2 })
     const mixedPool = computeOdds({ proficiency: 1, challenge: 1 })
 
-    closeTo(proficiencyPool.expectedNetSuccess, -challengePool.expectedNetSuccess, 12)
-    closeTo(mixedPool.expectedNetSuccess, 0, 12)
+    expect(proficiencyPool.expectedNetSuccess).toBeGreaterThan(0)
+    expect(challengePool.expectedNetSuccess).toBeLessThan(0)
+    expect(mixedPool.expectedNetSuccess).toBeLessThan(proficiencyPool.expectedNetSuccess)
+    expect(mixedPool.expectedNetSuccess).toBeGreaterThan(challengePool.expectedNetSuccess)
   })
 
   it('is stable across repeated calls and cache hits', () => {

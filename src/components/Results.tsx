@@ -1,10 +1,13 @@
 import { toBlob } from 'html-to-image'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { RollDetail } from './RollDetail'
+import { SymbolKey } from './SymbolKey'
 import type { ResolvedRoll } from '../dice/resolver'
-import type { SymbolCode } from '../dice/types'
+import type { DieRoll, SymbolCode } from '../dice/types'
 
 interface ResultsProps {
   symbols: SymbolCode[]
+  rolls: DieRoll[]
   resolved: ResolvedRoll | null
   rolledAt: number | null
   poolSummary: string
@@ -54,11 +57,12 @@ const copyBlobToClipboard = async (blob: Blob): Promise<boolean> => {
   }
 }
 
-export const Results = ({ symbols, resolved, rolledAt, poolSummary }: ResultsProps) => {
+export const Results = ({ symbols, rolls, resolved, rolledAt, poolSummary }: ResultsProps) => {
   const exportCardRef = useRef<HTMLElement | null>(null)
   const statusTimeoutRef = useRef<number | null>(null)
   const pulseTimeoutRef = useRef<number | null>(null)
   const [exportStatus, setExportStatus] = useState<ExportStatus>('idle')
+  const [showDetail, setShowDetail] = useState(false)
   const [animationKey, setAnimationKey] = useState(0)
   const [pulseActive, setPulseActive] = useState(false)
 
@@ -149,6 +153,16 @@ export const Results = ({ symbols, resolved, rolledAt, poolSummary }: ResultsPro
         <h2>Results</h2>
         <div className="results-header-side">
           <p>{rolledAt ? new Date(rolledAt).toLocaleTimeString() : 'Waiting for first roll'}</p>
+          <label className="detail-toggle">
+            <input
+              type="checkbox"
+              checked={showDetail}
+              onChange={() => setShowDetail((previous) => !previous)}
+              disabled={!resolved}
+            />
+            <span>More Detail</span>
+          </label>
+          <SymbolKey />
           <button
             type="button"
             className="ghost-button export-button"
@@ -212,6 +226,8 @@ export const Results = ({ symbols, resolved, rolledAt, poolSummary }: ResultsPro
           </div>
         )}
       </article>
+
+      {resolved && showDetail ? <RollDetail rolls={rolls} /> : null}
     </section>
   )
 }

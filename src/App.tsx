@@ -17,10 +17,11 @@ import {
 } from './dice/pool'
 import { resolveSymbols } from './dice/resolver'
 import { rollPool } from './dice/roller'
-import type { DicePool, DieType, SymbolCode } from './dice/types'
+import type { DicePool, DieRoll, DieType, SymbolCode } from './dice/types'
 
 interface LastRollState {
   symbols: SymbolCode[]
+  rolls: DieRoll[]
   resolved: ReturnType<typeof resolveSymbols>
   rolledAt: number
 }
@@ -43,11 +44,11 @@ function App() {
       return
     }
 
-    const { symbols } = rollPool(pool)
+    const { symbols, rolls } = rollPool(pool)
     const resolved = resolveSymbols(symbols)
     const rolledAt = Date.now()
 
-    setLastRoll({ symbols, resolved, rolledAt })
+    setLastRoll({ symbols, rolls, resolved, rolledAt })
     setHistory((previousHistory) => {
       const nextEntry: HistoryEntry = {
         id: historyId.current,
@@ -106,6 +107,7 @@ function App() {
           {oddsEnabled ? <OddsIntelPanel pool={pool} /> : null}
           <Results
             symbols={lastRoll?.symbols ?? []}
+            rolls={lastRoll?.rolls ?? []}
             resolved={lastRoll?.resolved ?? null}
             rolledAt={lastRoll?.rolledAt ?? null}
             poolSummary={poolSummary}
