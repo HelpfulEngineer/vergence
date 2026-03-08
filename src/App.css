@@ -176,6 +176,10 @@
   grid-template-columns: 1fr;
 }
 
+.primary-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
 .ghost-button,
 .clear-button,
 .roll-button {
@@ -1038,6 +1042,42 @@
   .results-reveal,
   .results-pulse {
     animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding-bottom: calc(6.6rem + env(safe-area-inset-bottom));
+  }
+
+  .primary-actions {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0;
+    z-index: 70;
+    margin-top: 0;
+    padding: 0.62rem;
+    padding-bottom: calc(0.62rem + env(safe-area-inset-bottom));
+    grid-template-columns: 1fr 2fr;
+    gap: 0.62rem;
+    border-top: 1px solid rgba(120, 188, 223, 0.28);
+    border-radius: 14px 14px 0 0;
+    background: linear-gradient(180deg, rgba(7, 21, 37, 0.94), rgba(6, 17, 30, 0.97));
+    box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.36);
+    backdrop-filter: blur(8px);
+  }
+
+  .primary-actions .clear-button {
+    min-height: 2.95rem;
+    font-size: 0.8rem;
+  }
+
+  .primary-actions .roll-button {
+    min-height: 2.95rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    box-shadow: 0 0 0 1px rgba(130, 228, 255, 0.32), 0 0 16px rgba(68, 191, 238, 0.24);
   }
 }
 
