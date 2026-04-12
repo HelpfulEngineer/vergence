@@ -1,10 +1,20 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import './App.css'
 import { History } from './components/History'
 import type { HistoryEntry } from './components/History'
 import { OddsIntelPanel } from './components/OddsIntelPanel'
+import { OracleDie } from './components/OracleDie'
 import { PoolBuilder } from './components/PoolBuilder'
 import { Results } from './components/Results'
+import { rollOracleDie, type OracleFace } from './dice/oracle'
 import {
   adjustDieCount,
   createEmptyPool,
@@ -23,6 +33,7 @@ import { useRollAnimation } from './hooks/useRollAnimation'
 import { useRollingPreview } from './hooks/useRollingPreview'
 
 const ROLL_ANIMATION_MS = 420
+const ORACLE_LONG_PRESS_MS = 650
 
 interface RollState {
   symbols: SymbolCode[]
@@ -38,9 +49,67 @@ function App() {
   const [lastRoll, setLastRoll] = useState<RollState | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [oddsEnabled, setOddsEnabled] = useState(false)
+  const [oracleOpen, setOracleOpen] = useState(false)
+  const [oracleResult, setOracleResult] = useState<OracleFace | null>(null)
   const historyId = useRef(1)
+  const oracleTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const oracleLongPressTimerRef = useRef<number | null>(null)
   const prefersReducedMotion = usePrefersReducedMotion()
   const canRoll = useMemo(() => totalDiceInPool(pool) > 0, [pool])
+
+  const clearOracleLongPress = useCallback((): void => {
+    if (oracleLongPressTimerRef.current === null) {
+      return
+    }
+
+    window.clearTimeout(oracleLongPressTimerRef.current)
+    oracleLongPressTimerRef.current = null
+  }, [])
+
+  useEffect(() => clearOracleLongPress, [clearOracleLongPress])
+
+  const handleOracleRoll = useCallback((): void => {
+    setOracleResult(rollOracleDie())
+  }, [])
+
+  const openOracle = useCallback((): void => {
+    clearOracleLongPress()
+    setOracleResult(rollOracleDie())
+    setOracleOpen(true)
+  }, [clearOracleLongPress])
+
+  const closeOracle = useCallback((): void => {
+    clearOracleLongPress()
+    setOracleOpen(false)
+    window.setTimeout(() => {
+      oracleTriggerRef.current?.focus()
+    }, 0)
+  }, [clearOracleLongPress])
+
+  const handleTitlePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>): void => {
+      if (event.pointerType === 'mouse') {
+        return
+      }
+
+      clearOracleLongPress()
+      oracleLongPressTimerRef.current = window.setTimeout(() => {
+        oracleLongPressTimerRef.current = null
+        openOracle()
+      }, ORACLE_LONG_PRESS_MS)
+    },
+    [clearOracleLongPress, openOracle],
+  )
+
+  const handleTitleKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLButtonElement>): void => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        openOracle()
+      }
+    },
+    [openOracle],
+  )
 
   const commitRoll = useCallback((roll: RollState): void => {
     setLastRoll(roll)
@@ -145,7 +214,20 @@ function App() {
     <main className="app-shell">
       <header className="app-header">
         <p className="app-kicker">Star Wars RPG Dice Console</p>
-        <h1>Vergence</h1>
+        <button
+          ref={oracleTriggerRef}
+          aria-label="Vergence"
+          className="app-title-button"
+          type="button"
+          onDoubleClick={openOracle}
+          onKeyDown={handleTitleKeyDown}
+          onPointerCancel={clearOracleLongPress}
+          onPointerDown={handleTitlePointerDown}
+          onPointerLeave={clearOracleLongPress}
+          onPointerUp={clearOracleLongPress}
+        >
+          <span className="app-title-text">Vergence</span>
+        </button>
         <p className="app-subtitle">
           Build your pool, apply upgrades, and resolve symbols with exact FFG / Edge Studio rules.
         </p>
@@ -188,6 +270,13 @@ function App() {
           <History items={history} />
         </div>
       </div>
+
+      <OracleDie
+        isOpen={oracleOpen}
+        result={oracleResult}
+        onClose={closeOracle}
+        onRoll={handleOracleRoll}
+      />
     </main>
   )
 }
